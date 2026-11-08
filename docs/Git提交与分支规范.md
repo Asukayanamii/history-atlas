@@ -1,8 +1,8 @@
 # Git 提交与分支管理规范
 
-> 参考 `personalized-learning-space` 项目的《代码提交规范》（docs/04-代码提交规范.md）改写，按本项目实际情况调整：托管在 **GitHub**（不是云效 Codeup），仓库为 **私有 + 免费版**，因此保护分支能力受限（见 1.2）。
+> 参考 `personalized-learning-space` 项目的《代码提交规范》改写，按本项目调整：托管在 **GitHub**，采用 **主干开发 + 按功能模块的短命分支**，不设前后端长期集成分支。
 >
-> 简版，按这个来就行；未覆盖的内容后续追加。
+> **为什么不分前后端**：本项目由 AI 辅助开发，前后端通常在一次改动里一起完成（一个功能 = 接口 + 页面 + 文档）。按「功能模块」切分支，PR 边界与需求条目（FR）对齐，评审时能一次性看完一个闭环；按前后端切反而会把一个功能劈成两半、互相等待。
 
 ---
 
@@ -23,151 +23,150 @@ npm install
 npm run dev          # http://127.0.0.1:5173
 ```
 
-**③ 切到自己的开发分支**
-
-后端同学切 `backend-dev`，前端同学切 `frontend-dev`：
+**③ 从最新 main 新开自己的功能分支**
 
 ```bash
-git checkout frontend-dev
-git pull origin frontend-dev
-```
-
-**④ 做具体功能时，在 dev 分支上新开 `feat` 分支**，不要直接改 dev：
-
-```bash
-git checkout frontend-dev
-git pull origin frontend-dev          # 先拉最新，很重要
+git checkout main
+git pull origin main                  # 先拉最新，很重要
 git checkout -b feat/atlas-event-panel
 ```
 
-> 每个功能子模块开一个 `feat/xxx`，开发完提 PR 合回对应的 dev（完整流程见第 2 章）。
->
+**④ 开发、自测、提交 PR**（流程见第 2 章）。
+
 > GUI（VS Code / PyCharm / GitHub Desktop）的 Git 功能完全等价，不强制敲命令。
 
-**⑤ 认证方式**：GitHub 已禁用账号密码推送，使用 **Personal Access Token（PAT）** 或 **SSH key**。仓库地址已配置为 HTTPS + 本机凭据，无需重复输入。
+**⑤ 认证方式**：GitHub 已禁用账号密码推送，使用 **Personal Access Token（PAT）** 或 **SSH key**。
 
 ---
 
 ## 1. 分支模型
 
 ```text
-feat/xxx  ──► PR（Squash）──► backend-dev  ──┐
-                                              ├──► 里程碑完成 ──► PR（Merge）──► main
-feat/xxx  ──► PR（Squash）──► frontend-dev ──┘
-
-hotfix/xxx ──► PR（Merge）──► main ──► 回合并到各 dev
+feat/<模块>   ─┐
+fix/<问题>    ─┤──► PR（Squash）──► main（受保护，随时可演示）
+docs/<主题>   ─┤
+chore/<事项>  ─┤
+hotfix/<故障> ─┘（线上紧急修复，同样走 PR，可加急评审）
 ```
 
-| 分支 | 用途 | 说明 |
+| 分支 | 用途 | 生命周期 |
 | --- | --- | --- |
-| `main` | 主分支 | 随时可演示、可部署。**约定不直接 push**，只接受 PR |
-| `backend-dev` | 后端集成分支 | 后端模块开发完合到这里 |
-| `frontend-dev` | 前端集成分支 | 前端模块开发完合到这里 |
-| `feat/xxx` | 功能分支 | 从对应 dev 新开，一个子模块一个分支 |
-| `fix/xxx` | 缺陷分支 | 修集成阶段问题，合回对应 dev |
-| `docs/xxx` | 文档分支 | 需求/接口文档大改时使用，合回 dev |
-| `hotfix/xxx` | 线上紧急修复 | 从 `main` 新开，修完合回 `main`，再回合并到各 dev |
+| `main` | 唯一常驻分支。随时可运行、可演示、可部署；**只接受 PR** | 永久 |
+| `feat/xxx` | 功能模块分支，一个模块/一个 FR 一条 | 合并即删 |
+| `fix/xxx` | 缺陷修复分支 | 合并即删 |
+| `docs/xxx` | 文档大改（需求/接口/规范重写） | 合并即删 |
+| `chore/xxx` | 构建、依赖、脚手架、目录调整 | 合并即删 |
+| `hotfix/xxx` | 线上紧急修复，从 `main` 新开，合并后同样删 | 合并即删 |
 
-**核心规则：先合 dev，再合 main。** 功能分支不要直接向 `main` 提 PR。
+**核心规则**
 
-命名规则：
+1. **没有长期 dev 分支**：不设 `backend-dev` / `frontend-dev`，所有改动最终都进 `main`。
+2. **一条分支只做一件事**：一个功能模块、或一个 FR 编号、或一个缺陷。
+3. **分支由功能负责人自行维护**：自己负责与 `main` 同步、解冲突、提 PR、删分支，不设「集成分支管理员」。
+4. **分支寿命 ≤ 2 周**：超过 2 周未合并的，要么拆小合并，要么关闭重来。
+5. **一个分支可以同时改前后端**：同一功能涉及的 `frontend/`、`backend/`、`docs/` 改动放在**同一个 PR** 里，保证 main 上不会出现「接口有了、页面没有」的半成品。
 
-| 类型 | 命名示例 |
+### 1.1 分支命名（按模块，小写 + 连字符）
+
+| 模块 | 建议分支名 |
 | --- | --- |
-| 功能 | `feat/atlas-event-panel`、`feat/rag-qa`、`feat/question-generate` |
-| 修复 | `fix/mistake-dedup`、`fix/citation-missing` |
+| 沙盘索引 | `feat/atlas-index`、`feat/atlas-event-panel` |
+| 资源库 | `feat/resource-library`、`feat/resource-upload` |
+| 问答 | `feat/rag-qa`、`feat/qa-citations` |
+| 练习与学情 | `feat/practice`、`feat/mistake-book`、`feat/mastery-stats` |
+| 账号与教师端 | `feat/auth`、`feat/teacher-portal` |
+| 搜索 | `feat/global-search` |
+| 基础设施 | `chore/ci`、`chore/gitattributes` |
+| 缺陷 | `fix/citation-missing`、`fix/mistake-dedup` |
 | 文档 | `docs/api-v1`、`docs/prd-revision` |
-| 构建/杂项 | `chore/vite-build`、`chore/remove-scene-code` |
-| 紧急修复 | `hotfix/token-expire` |
 
-分支名一律**小写 + 连字符**，不要出现中文、空格、下划线。
+> 分支名不要出现中文、空格、下划线；不要用 `dev`、`test`、`temp`、`wip` 这类无信息名字。
 
-### 1.1 在 GitHub 上创建 PR
+### 1.2 在 GitHub 上创建 PR
 
 ```text
 仓库页 → Pull requests → New pull request
-  → base 选 backend-dev / frontend-dev
-  → compare 选 feat/atlas-event-panel
-  → 填标题（符合第 6 章格式）、描述（第 2 章模板）
-  → 指定 Reviewer（至少 1 人）→ Create pull request
+  → base: main
+  → compare: feat/atlas-event-panel
+  → 标题符合第 6 章格式
+  → 描述按第 2 章模板填写（做了什么 / 怎么验证 / 关联 FR）
+  → Create pull request
 ```
 
 要点：
 
-- **base 和 compare 别选反**；
-- 标题就是将来进 dev 的提交信息，写清楚做了什么；
-- 有冲突时 GitHub 会显示 `This branch has conflicts`，处理办法见第 3 章。
+- base 永远是 `main`，不要选反；
+- 标题就是将来进 `main` 的提交信息（Squash 后保留标题）；
+- 有冲突时 GitHub 显示 `This branch has conflicts`，按第 3 章在本地解决后重新推送。
 
-### 1.2 保护分支（现状与对策）
+### 1.3 保护分支（已开启）
 
-当前仓库是 **私有 + GitHub 免费版**，平台不支持保护分支（GitHub 提示需 Pro 或公开仓库）。因此：
+仓库已转为 **公开仓库**，`main` 已配置保护规则：
 
-| 规则 | 当前落地方式 |
-| --- | --- |
-| 禁止直接 push `main` | **靠约定**：不直接推，一律走 PR |
-| 合并前需评审 | 约定至少 1 人评审；两人项目允许自审，但须在 PR 里写清验证方式 |
-| 新提交重置评审 | 评审后如再推提交，需在 PR 里留言说明并重新确认 |
+| 规则 | 配置值 | 说明 |
+| --- | --- | --- |
+| 禁止直接推送 | 是（含管理员） | 只能通过 PR 合并进 main |
+| 禁止强制推送 | 是 | 防覆盖历史 |
+| 禁止删除分支 | 是 | 防误删 |
+| 合并前必须走 PR | 是 | 单人阶段批准数 = 0，可直接合并自己的 PR |
+| 要求线性历史 | 是 | 与 Squash 合并配合，main 历史一条一条 |
+| 新提交后重置评审 | 是 | 评审通过后再推提交需重新确认 |
 
-**计划**：一旦仓库转为公开或升级 GitHub Pro，立刻按下列配置开启，用平台兜底：
+> **批准数为什么是 0**：当前只有一名维护者，GitHub 不允许自己批准自己的 PR。等加入第二位协作者后，在 Settings → Branches 把 *Require approvals* 改为 **1**，并勾选 *Dismiss stale pull request approvals*。
+>
+> 紧急情况下需要直接改 main：临时在 Settings → Branches 关闭保护，改完立刻恢复——**不要长期关闭**。
 
-| 配置项 | 值 |
-| --- | --- |
-| 保护分支 | `main` |
-| 允许直接推送 | 否（仅管理员可例外） |
-| 合并前要求 | 至少 1 个 approving review |
-| 新提交后重置评审 | 是 |
-| 要求状态检查通过 | 接入 CI 后开启（见第 9 章） |
-
-### 1.3 与参考项目的差异
+### 1.4 与参考项目的差异
 
 | 项 | personalized-learning-space | 本项目 |
 | --- | --- | --- |
 | 托管 | 阿里云效 Codeup | GitHub |
 | 「PR」叫法 | 合并请求 | Pull Request |
-| 保护分支 | 已由平台配置 | 免费版不可用，靠约定（见 1.2） |
-| 主机分支 | `master` | `main`（GitHub 默认） |
-| 功能分支合并方式 | Merge | **Squash**（保持 dev 历史线性） |
+| 主机分支 | `master` | `main` |
+| 集成分支 | `backend-dev` / `frontend-dev` | **不设**，功能分支直接合 main |
+| 功能分支合并方式 | Merge | **Squash**（main 历史线性） |
+| 保护分支 | 平台已配置 | 已配置（公开仓库，见 1.3） |
 
 ---
 
 ## 2. 开发流程
 
-### 第 1 步：从 dev 新开功能分支
+### 第 1 步：从 main 新开功能分支
 
 ```bash
-git checkout frontend-dev
-git pull origin frontend-dev
+git checkout main
+git pull origin main
 git checkout -b feat/atlas-event-panel
 ```
 
 ### 第 2 步：开发 + 提交（可多次）
 
 ```bash
-git add frontend/src
-git status                     # 先看一眼，别把本地配置带上
-git commit -m "feat(frontend): 事件面板展示关联知识点与教材出处"
+git add frontend/src backend/app
+git status                              # 先看一眼，别把本地配置带上
+git commit -m "feat(atlas): 事件面板展示关联知识点与教材出处"
 ```
 
-一个子模块可以拆成多次提交，**一次提交只做一件事**。
+一个功能可以拆多次提交，**一次提交只做一件事**。
 
 ### 第 3 步：本地自测
 
 | 端 | 最低要求 |
 | --- | --- |
-| 前端 | `npm run build` 通过；`npm run dev` 下页面可交互，控制台无 error |
-| 后端 | 服务能起；核心接口在 `/docs`（Swagger）里调通；单元测试通过 |
-| 文档 | `git diff --check` 无空白/冲突残留 |
+| 前端 | `npm run build` 通过；`npm run dev` 下主流程可走通，控制台无 error |
+| 后端 | 服务能起；核心接口在 `/docs`（Swagger）调通；`pytest` 通过 |
+| 文档 | `git diff --check` 无冲突残留与行尾空白 |
 
 **没跑通的东西不要提 PR。**
 
-### 第 4 步：同步 dev 最新代码
+### 第 4 步：同步 main 最新代码
 
 ```bash
 git fetch origin
-git merge origin/frontend-dev      # 用 merge，不用 rebase 改公共分支历史
+git merge origin/main
 ```
 
-没冲突就继续；有冲突跳到第 3 章。
+用 `merge` 而不是 `rebase` 改公共分支历史；冲突处理见第 3 章。
 
 ### 第 5 步：推送并提 PR
 
@@ -175,67 +174,54 @@ git merge origin/frontend-dev      # 用 merge，不用 rebase 改公共分支�
 git push -u origin feat/atlas-event-panel
 ```
 
-然后在 GitHub 上创建 PR：`feat/atlas-event-panel` → `frontend-dev`。
+在 GitHub 创建 PR：**`feat/atlas-event-panel` → `main`**。
 
-**PR 描述模板**（够用就行，不要空着）：
+**PR 描述模板**：
 
 ```markdown
 ## 做了什么
 - 事件面板新增「关联知识点 / 教材出处」区块
-- 点击知识点跳转反查事件列表
+- 点击知识点跳转反查事件列表（FR-ATL-03）
 
 ## 怎么验证
-- `npm run build` 通过
+- npm run build 通过
 - 打开 /?theme=wudai&event=wudai-e06，点击面板资源项，控制台无报错
 - 截图：<贴图>
 
 ## 影响范围
-- 仅前端；未改接口
+- 前端：src/App.vue、src/engine/ui.js
+- 后端：无
 
-## 关联文档
-- docs/需求文档.md FR-ATL-03
+## 关联
+- 需求：docs/需求文档.md FR-ATL-03
+- 接口：docs/接口文档.md 7.3
 ```
 
-### 第 6 步：评审 + 合并（Squash）
+### 第 6 步：Squash 合并并删除分支
 
-- 至少 1 人评审通过；
-- GitHub 选 **Squash and merge**，压缩成一条提交进 dev；
-- 合并后**删除源分支**（GitHub 有 `Delete branch` 按钮）。
+- 自查通过（或协作者评审通过）后，选 **Squash and merge**，提交信息沿用 PR 标题；
+- 合并后点 **Delete branch**；
+- 本地清理：`git branch -d feat/atlas-event-panel`。
 
-> 不要在已合并的分支上继续开发新任务，一律从最新 dev 新开。
+### 第 7 步：里程碑打 tag（替代 dev 分支）
 
-### 第 7 步：里程碑完成，dev → main
-
-一个可演示的里程碑（例如「沙盘索引接通数据」）整体验证通过后，才提 PR：
-
-**`frontend-dev` → `main`**，使用 **Merge commit**（保留里程碑节点）。
-
-> 不要每做完一个小功能就往 main 合；`main` 永远保持可运行。
-
-合并后把 main 合回各 dev，保持起点一致：
+以前靠 dev 分支承载「阶段性稳定版本」，现在用 **tag**：
 
 ```bash
-git checkout frontend-dev
-git fetch origin
-git merge origin/main
-git push origin frontend-dev
+git checkout main && git pull
+git tag -a v0.1.0 -m "MVP：沙盘索引接通数据"
+git push origin v0.1.0
 ```
 
-### 合并策略对照
+> 打 tag 前确认：`npm run build` 通过、后端可起、`main` 上无已知阻塞缺陷。
 
-| 合并方向 | 方式 | 理由 |
-| --- | --- | --- |
-| `feat/fix/docs` → `*-dev` | **Squash merge** | dev 历史线性、一条提交对应一个功能 |
-| `*-dev` → `main` | **Merge commit** | 保留里程碑边界，便于回溯 |
-| `hotfix` → `main` | **Merge commit** | 线上修复需可追溯 |
-| `main` → `*-dev` | Merge | 同步，不产生新内容 |
+### 单人 vs 多人
 
-### 分支同步与清理
-
-- **feat 分支**：开工前 `git pull` 自己的 dev；每天收工前把 dev 最新代码合进来一次。
-- **dev ↔ main**：里程碑合并后，立即把 main 合回两个 dev。
-- **前后端之间**：`frontend/` 与 `backend/` 目录不重叠，通过接口契约联调；需要对方最新代码时合 master（main）即可。
-- **生命周期**：功能分支合入 dev 后即删（本地 `git branch -d`，远程 PR 页面 Delete branch）。不要长期保留。
+| 场景 | 做法 |
+| --- | --- |
+| 单人维护 | 自己提 PR、自查、合并（批准数 0） |
+| 有协作者 | 至少 1 人 review 后合并；reviewer 不合并自己没看过的 PR |
+| 多人并行 | 按模块切 PR；不要两人同时改同一个文件（见第 3.6 节） |
 
 ---
 
@@ -243,7 +229,7 @@ git push origin frontend-dev
 
 ### 3.1 什么时候会遇到
 
-两个分支改了**同一文件的同一块区域**。常见于 `git merge origin/frontend-dev`，以及 PR 页面提示 `This branch has conflicts that must be resolved`。
+两个分支改了**同一文件的同一块区域**。常见于 `git merge origin/main`，以及 PR 页面提示 `This branch has conflicts that must be resolved`。
 
 **最好的办法是提前避免**：提 PR 之前先执行第 2 章第 4 步，把冲突在本地解决掉。
 
@@ -253,14 +239,14 @@ git push origin frontend-dev
 <<<<<<< HEAD
 const threshold = 0.5;      // 你分支上的代码
 =======
-const threshold = 0.55;     // dev 上的代码
->>>>>>> origin/frontend-dev
+const threshold = 0.55;     // main 上的代码
+>>>>>>> origin/main
 ```
 
 | 标记 | 含义 |
 | --- | --- |
 | `<<<<<<< HEAD` ~ `=======` | 当前分支的内容 |
-| `=======` ~ `>>>>>>> origin/xxx` | 要合进来的分支的内容 |
+| `=======` ~ `>>>>>>> origin/main` | 要合进来的 main 的内容 |
 
 ### 3.3 三步解决
 
@@ -277,7 +263,7 @@ git commit                              # 用默认 merge 信息即可
 | --- | --- |
 | 两边改的是不同功能 | 两段都保留 |
 | 两边改的是同一处逻辑 | 想清楚正确行为，合成一段 |
-| 你的改动已废弃 | 用 dev 的版本 |
+| 你的改动已废弃 | 用 main 的版本 |
 | 拿不准 | 去问改这块的人，别乱猜 |
 
 > ⚠️ 不要直接删掉别人的代码。冲突不是二选一，是合出一个两边都对的版本。
@@ -291,9 +277,9 @@ git diff --check      # 检查是否还有残留的 <<<<<<< 标记与行尾空�
 
 ### 3.6 减少冲突的习惯
 
-- 开工前先 `git pull`，别在过期代码上开发；
-- 每天收工前合一次 dev；
-- 按模块划清分工，别两个人同时改同一文件（本项目重点：`src/engine/**`、`src/data/**`、`docs/**`）；
+- 开工前先 `git pull origin main`；
+- 每天收工前把 main 合进来一次，冲突小、好解决；
+- 按模块划清边界（`src/engine/**`、`src/data/**`、`backend/**`、`docs/**`）；
 - 同一文件反复冲突 = 任务边界有问题，先沟通再动手。
 
 ---
@@ -356,14 +342,14 @@ if question.source_type == "ai_generated":
 
 需要共享的配置写成 `.env.example`：只放字段名和示例值，各人复制成 `.env` 后填自己的值。
 
-**万一已经提交了密钥**：立刻更换对应密码 / 密钥（旧的随之作废），并在团队里说明——只删文件没用，git 历史里仍查得到。
+**万一已经提交了密钥**：立刻更换对应密码 / 密钥（旧的随之作废），并在团队里说明——只删文件没用，git 历史里仍查得到。**仓库现已公开，密钥泄露的后果更直接，务必先检查再提交。**
 
 ### 5.1 本项目的特殊约定
 
 | 对象 | 规则 |
 | --- | --- |
 | `frontend/src/data/dem/regions.js`（约 3MB） | **生成物**，只在重跑 `tools/build_dem.py` 时随代码一起提交，单独一条提交，说明重跑原因 |
-| 事件插画 / 全景（`public/assets/**`） | 单文件 ≤ 600KB，格式 JPEG；新增资源必须同时更新 `src/data/assets.js` 清单与 `license.js` 出处 |
+| 事件插画 / 全景（`public/assets/**`） | 单文件 ≤ 600KB，JPEG；新增资源必须同时更新 `src/data/assets.js` 清单与 `license.js` 出处 |
 | `package-lock.json` | **必须提交**，锁版本；只随依赖变更单独提交（`chore(deps): ...`） |
 | Word 文档（`docs/*.docx`） | diff 不可读，每次改动**单独一条提交**，提交信息写清改了哪一章 |
 | 中文文件名 | 保持现状（`docs/需求文档.md`），不要为了兼容改英文名 |
@@ -372,7 +358,7 @@ if question.source_type == "ai_generated":
 
 ## 6. 提交信息
 
-格式（参考 Conventional Commits 简化版）：
+格式（Conventional Commits 简化版）：
 
 ```text
 类型(范围): 简要说明
@@ -387,7 +373,7 @@ if question.source_type == "ai_generated":
 | --- | --- |
 | `feat` | 新功能 |
 | `fix` | 修复缺陷 |
-| `docs` | 文档变更（需求 / 接口 / README） |
+| `docs` | 文档变更（需求 / 接口 / README / 规范） |
 | `refactor` | 重构（不改变对外行为） |
 | `style` | 格式调整（空格、分号、排版，不改逻辑） |
 | `perf` | 性能优化 |
@@ -395,25 +381,20 @@ if question.source_type == "ai_generated":
 | `chore` | 构建、依赖、脚手架、杂项 |
 | `revert` | 回滚某次提交 |
 
-### 范围（可选，推荐）
+### 范围（推荐，按模块）
 
-| 范围 | 说明 |
-| --- | --- |
-| `frontend` | `frontend/` |
-| `backend` | `backend/` |
-| `docs` | `docs/` |
-| `deps` | 依赖与锁文件 |
-| `ci` | 流水线配置 |
+`atlas`（沙盘索引）、`resource`（资源库）、`qa`（问答）、`practice`（练习学情）、`auth`（账号）、`teacher`（教师端）、`deps`、`ci`、`docs`。
 
 ### 示例
 
 ```text
-feat(frontend): 事件面板展示关联知识点与教材出处
-fix(backend): 修复问答引用去重后页码丢失
+feat(atlas): 事件面板展示关联知识点与教材出处
+feat(qa): 问答返回教材出处并支持低相似度兜底
+fix(practice): 修复错题重复写入
 docs: 新增 Git 提交与分支管理规范
 refactor(frontend): 沙盘引擎改为 ESM 模块并移除全局命名空间
 chore(deps): 升级 vite 到 6.4.5
-revert: 回退「移除 vr360 模块」的改动，影响未评审完的演示
+revert: 回退「移除 vr360 模块」的改动
 ```
 
 ### 要求与反例
@@ -422,16 +403,16 @@ revert: 回退「移除 vr360 模块」的改动，影响未评审完的演示
 
 - 说清做了什么，不写 `update`、`修改一下`、`fix bug`、`临时提交`；
 - 标题 ≤ 50 字，结尾不加句号；
-- 一次提交只对应一件事（不要「顺手改了三个模块」）；
+- 一次提交只对应一件事；
 - **不添加任何工具或 AI 署名**（`Co-authored-by:`、`Generated with ...`），提交信息只描述本次改动。
 
 **反例**
 
 | ✗ 不好 | ✓ 应改为 |
 | --- | --- |
-| `update` | `fix(backend): 修正验证码 60 秒内可重复发送` |
-| `修改前端` | `feat(frontend): 沙盘时间轴支持拖动定位事件` |
-| `fix bug` | `fix(frontend): 事件面板在 375px 宽度下溢出` |
+| `update` | `fix(auth): 修正验证码 60 秒内可重复发送` |
+| `修改前端` | `feat(atlas): 沙盘时间轴支持拖动定位事件` |
+| `fix bug` | `fix(atlas): 事件面板在 375px 宽度下溢出` |
 | `WIP` | 拆成可验证的小提交再推 |
 
 ---
@@ -441,12 +422,11 @@ revert: 回退「移除 vr360 模块」的改动，影响未评审完的演示
 | 场景 | 命令 |
 | --- | --- |
 | 克隆 | `git clone https://github.com/Asukayanamii/history-atlas.git` |
-| 从 dev 开新分支 | `git checkout frontend-dev && git pull && git checkout -b feat/xxx` |
-| 提交 | `git add <路径> && git commit -m "feat(frontend): xxx"` |
-| 同步 dev 最新 | `git fetch origin && git merge origin/frontend-dev` |
-| 同步 main 到当前分支 | `git fetch origin && git merge origin/main` |
+| 从 main 开新分支 | `git checkout main && git pull && git checkout -b feat/xxx` |
+| 提交 | `git add <路径> && git commit -m "feat(模块): xxx"` |
+| 同步 main | `git fetch origin && git merge origin/main` |
 | 推送并建立跟踪 | `git push -u origin feat/xxx` |
-| 删除已合并分支 | `git branch -d feat/xxx` / `git push origin --delete feat/xxx` |
+| 删除已合并分支 | `git branch -d feat/xxx`（远程用 PR 页 Delete branch） |
 | 查看冲突文件 | `git status` |
 | 标记冲突已解决 | `git add <文件>` |
 | 完成合并提交 | `git commit` |
@@ -455,6 +435,8 @@ revert: 回退「移除 vr360 模块」的改动，影响未评审完的演示
 | 查看某文件改动历史 | `git log --oneline -- frontend/src/engine/main.js` |
 | 撤销未提交的改动 | `git checkout -- <文件>` |
 | 撤销最近一次提交（保留改动） | `git reset --soft HEAD~1` |
+| 打里程碑 tag | `git tag -a v0.1.0 -m "..." && git push origin v0.1.0` |
+| 切回 main 并更新 | `git checkout main && git pull` |
 
 ---
 
@@ -467,6 +449,7 @@ revert: 回退「移除 vr360 模块」的改动，影响未评审完的演示
 [ ] 提交信息符合「类型(范围): 说明」
 [ ] 接口或需求有变更时，同一次 PR 带上文档更新
 [ ] 没有 AI 署名、没有无关格式化改动
+[ ] 分支是从最新 main 开的，且寿命 < 2 周
 ```
 
 ---
@@ -475,9 +458,9 @@ revert: 回退「移除 vr360 模块」的改动，影响未评审完的演示
 
 后续按需追加：
 
-- [ ] GitHub Actions：前端 `npm run build` + 后端 `pytest` 作为 PR 必过检查
-- [ ] 版本号与 tag 策略（`v0.1.0` 里程碑打 tag）
+- [ ] GitHub Actions：前端 `npm run build` + 后端 `pytest` 作为 PR 必过检查（配合 main 的 *Require status checks*）
+- [ ] 版本号与 tag 规范（`v0.1.0` / `v0.2.0`，语义化版本）
 - [ ] CHANGELOG 生成方式
 - [ ] 回滚流程（revert PR / 重新部署上一版本）
-- [ ] 仓库转公开或升级 Pro 后，落实 1.2 的保护分支配置
-- [ ] `.gitattributes` 统一换行（避免每次提交都出现 LF→CRLF 警告）
+- [ ] 加入协作者后把批准数改为 1，并开启 stale review 重置
+- [ ] `.gitattributes` 统一换行（当前每次提交都有 LF→CRLF 警告）
