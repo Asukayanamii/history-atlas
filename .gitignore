@@ -1,0 +1,38 @@
+# --- Node / 前端 ---
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.local
+coverage/
+
+# --- Python / 后端 ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- 数据与索引 ---
+data/chroma/
+*.sqlite3
+*.db
+
+# --- 环境与密钥 ---
+.env
+.env.*
+!.env.example
+
+# --- 编辑器 / 系统 ---
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- 临时 ---
+_plan.txt
+_read_tmp.py
