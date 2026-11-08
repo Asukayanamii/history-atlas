@@ -74,6 +74,7 @@ npm run build    # 产物在 frontend/dist
 
 - [需求文档（PRD）](docs/需求文档.md)：产品定位、角色、功能需求、验收标准、里程碑
 - [接口文档（API v1）](docs/接口文档.md)：通用约定、数据模型、全部接口与错误码
+- [Git 提交与分支规范](docs/Git提交与分支规范.md)：分支模型、开发流程、提交信息、冲突处理
 - [历史学习智能体 MVP 技术方案](<docs/历史学习智能体MVP技术方案(2).docx>)
 - [课件使用说明（数据字段 / 资源替换）](docs/3d/课件说明.md)
 - [场景数据契约](docs/3d/handoff/SCENE_SPEC_v0.4.md)
