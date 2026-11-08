@@ -36,3 +36,9 @@ desktop.ini
 # --- 临时 ---
 _plan.txt
 _read_tmp.py
+
+# --- 构建缓存 / 本地产物 ---
+frontend/dist/
+tools/.dem-cache/
+.build-dem.log
+*.bak

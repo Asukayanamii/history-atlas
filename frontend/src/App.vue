@@ -1,0 +1,265 @@
+<template>
+<div class="app-root" v-pre>
+<!-- 背景：墨青渐变 + 噪点 + 暗角；assets/ui/bg.jpg 就绪后叠在下面 -->
+<div id="backdrop"><div class="bd-art"></div></div>
+<canvas id="stage" aria-label="三维历史沙盘"></canvas>
+<div id="labels"></div>
+
+<!-- 顶栏 -->
+<header id="bar">
+  <div class="bar-left">
+    <div class="seal" title="Logo 占位（R09，可替换）"><span>史</span><span>境</span></div>
+    <div class="brand">
+      <h1 id="projName">史境 · 三维历史沙盘</h1>
+      <p><b id="themeTitle">五代十国</b><i id="themePeriod"></i></p>
+    </div>
+  </div>
+  <nav id="tabs" aria-label="历史时期"></nav>
+  <div class="bar-right" id="tools">
+    <button class="tool" data-act="home" title="回到全景（Home）"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg><span>全景</span></button>
+    <button class="tool" data-act="layers" title="图层（L）"><svg viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 13 9 5 9-5"/></svg><span>图层</span></button>
+    <button class="tool" data-act="sound" title="音效开关（M）"><svg viewBox="0 0 24 24" class="i-on"><path d="M4 9.5h4l5-4v13l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg><svg viewBox="0 0 24 24" class="i-off"><path d="M4 9.5h4l5-4v13l-5-4H4z"/><path d="m17 9.5 5 5m0-5-5 5"/></svg><span>音效</span></button>
+    <button class="tool" data-act="demo" title="自动演示（P）"><svg viewBox="0 0 24 24" class="i-on"><path d="M7 5v14l12-7z"/></svg><svg viewBox="0 0 24 24" class="i-off"><path d="M7 5v14M17 5v14"/></svg><span>演示</span></button>
+    <button class="tool" data-act="full" title="全屏（F）"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg><span>全屏</span></button>
+    <button class="tool" data-act="sources" title="来源与授权"><svg viewBox="0 0 24 24"><path d="M5 4.5h9.5L19 9v10.5H5z"/><path d="M14.5 4.5V9H19M8.5 13h7M8.5 16.5h5"/></svg><span>来源</span></button>
+    <button class="tool" data-act="help" title="帮助（?）"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.6a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .8-1 1.5v.6M12 16.8v.2"/></svg><span>帮助</span></button>
+  </div>
+</header>
+
+<!-- 当前事件胶囊 -->
+<div id="now" class="is-empty">
+  <span class="now-no" id="nowNo">—</span>
+  <span class="now-date" id="nowDate"></span>
+  <span class="now-title" id="nowTitle">选择一个事件开始</span>
+  <span class="now-region" id="nowRegion" hidden></span>
+  <span class="chip chip-ph" id="nowStatus" hidden>占位 · 待核订</span>
+</div>
+
+<!-- 图例 -->
+<aside id="legend">
+  <h3>图例</h3>
+  <ul id="legendRoutes"></ul>
+  <p class="legend-note" id="legendNote"></p>
+</aside>
+
+<!-- 图层面板 -->
+<div id="layers" class="panel" hidden>
+  <h3>图层</h3>
+  <label><span>路线</span><input type="checkbox" data-layer="routes" checked></label>
+  <label><span>势力色块</span><input type="checkbox" data-layer="regions" checked></label>
+  <label><span>河流</span><input type="checkbox" data-layer="rivers" checked></label>
+  <label><span>地名</span><input type="checkbox" data-layer="places" checked></label>
+  <label><span>事件标签</span><input type="checkbox" data-layer="events" checked></label>
+  <label><span>地形等高线</span><input type="checkbox" data-layer="relief" checked></label>
+  <label><span>情景小人</span><input type="checkbox" data-layer="vignette" checked></label>
+  <label class="sep"><span>自动旋转</span><input type="checkbox" data-layer="spin"></label>
+</div>
+
+<!-- 事件卡片 -->
+<article id="card" aria-live="polite">
+  <div class="card-pic" id="cardPic">
+    <div class="ph">
+      <b class="ph-no" id="phNo">01</b>
+      <span class="ph-title" id="phTitle"></span>
+      <span class="ph-tag">待替换资源 · 事件插画</span>
+    </div>
+    <div class="pic-img" id="picImg"></div>
+    <span class="pic-badge" id="picBadge" hidden></span>
+    <button class="pic-vr" id="vrBtn" data-act="vr" title="360° 环视（V）" hidden>
+      <svg viewBox="0 0 24 24"><path d="M4 9.5c2.4-1.6 4.8-2.4 8-2.4s5.6.8 8 2.4c-.2 3.4-1.1 5.4-3 6.2-1.6.7-3.2-.6-5-3.1-1.8 2.5-3.4 3.8-5 3.1-1.9-.8-2.8-2.8-3-6.2Z"/></svg>
+      <span>360° 环视</span>
+    </button>
+  </div>
+  <div class="card-body">
+    <div class="card-meta"><span id="cardNo"></span><span id="cardDate"></span><span id="cardPlace"></span></div>
+    <h2 id="cardTitle"></h2>
+    <div class="card-chips" id="cardChips"></div>
+    <p class="card-sum" id="cardSum"></p>
+    <div class="card-figures" id="cardFigures" hidden></div>
+    <ul class="card-detail" id="cardDetail"></ul>
+  </div>
+  <div class="card-acts">
+    <button class="btn" data-act="prev" title="上一站（←）"><svg viewBox="0 0 24 24"><path d="m14.5 6-6 6 6 6"/></svg>上一站</button>
+    <button class="btn btn-main" data-act="next" title="下一站（→）">下一站<svg viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6"/></svg></button>
+    <button class="btn" data-act="ask" title="课堂提问（Q）"><svg viewBox="0 0 24 24"><path d="M5 5.5h14v10H11l-4 3.5v-3.5H5z"/><path d="M10.3 9a1.8 1.8 0 1 1 2.4 1.7c-.5.2-.7.5-.7 1M12 13.6v.1"/></svg>课堂提问</button>
+    <button class="btn" id="sceneBtn" data-act="scene" title="进入 3D 场景"><svg viewBox="0 0 24 24"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg><span id="sceneBtnLabel">进入场景</span><small id="sceneBtnNote">（待补）</small></button>
+  </div>
+  <button class="card-close" data-act="close" title="收起卡片（Esc）"><svg viewBox="0 0 24 24"><path d="m7 7 10 10M17 7 7 17"/></svg></button>
+</article>
+
+<!-- 时间轴 -->
+<footer id="dock">
+  <div id="timeline">
+    <button class="tl-step" data-act="prev" title="上一站（←）"><svg viewBox="0 0 24 24"><path d="m14.5 6-6 6 6 6"/></svg></button>
+    <div class="tl-track">
+      <span class="tl-end tl-start" id="tlStart"></span>
+      <div class="tl-rail"><div class="tl-fill" id="tlFill"></div><div class="tl-dots" id="tlDots"></div></div>
+      <span class="tl-end tl-stop" id="tlEnd"></span>
+    </div>
+    <button class="tl-step" data-act="next" title="下一站（→）"><svg viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6"/></svg></button>
+  </div>
+  <div id="foot">
+    <span id="footNote"></span>
+    <button class="link" data-act="sources">来源与授权</button>
+    <span class="foot-ver" id="footVer"></span>
+  </div>
+</footer>
+
+<!-- 课堂提问 -->
+<div id="ask" class="modal" hidden>
+  <div class="modal-box ask-box">
+    <div class="ask-tag">课堂提问 · <span id="askFrom"></span></div>
+    <p class="ask-q" id="askQ"></p>
+    <div class="ask-a" id="askA" hidden><b>参考答案</b><p id="askAText"></p></div>
+    <div class="ask-row">
+      <button class="btn btn-main" data-act="reveal" id="askReveal">揭晓答案<kbd>Q</kbd></button>
+      <button class="btn" data-act="close">关闭<kbd>Esc</kbd></button>
+    </div>
+  </div>
+</div>
+
+<!-- 来源与授权 -->
+<div id="sources" class="modal" hidden>
+  <div class="modal-box src-box">
+    <header><h2>来源与授权</h2><button class="card-close" data-act="close" title="关闭（Esc）"><svg viewBox="0 0 24 24"><path d="m7 7 10 10M17 7 7 17"/></svg></button></header>
+    <p class="src-lead" id="srcLead"></p>
+    <nav class="src-tabs" id="srcTabs"></nav>
+    <div class="src-body" id="srcBody"></div>
+  </div>
+</div>
+
+<!-- 帮助 -->
+<div id="help" class="modal" hidden>
+  <div class="modal-box help-box">
+    <header><h2>操作帮助</h2><button class="card-close" data-act="close" title="关闭（Esc）"><svg viewBox="0 0 24 24"><path d="m7 7 10 10M17 7 7 17"/></svg></button></header>
+    <div class="help-grid">
+      <section>
+        <h4>鼠标</h4>
+        <dl>
+          <dt>左键拖动</dt><dd>旋转沙盘</dd>
+          <dt>滚轮</dt><dd>缩放</dd>
+          <dt>右键拖动</dt><dd>平移</dd>
+          <dt>点击地名胶囊</dt><dd>跳到该事件（编号可单独点）</dd>
+          <dt>点击时间轴圆点</dt><dd>跳到该事件</dd>
+        </dl>
+      </section>
+      <section>
+        <h4>键盘 / 翻页笔</h4>
+        <dl>
+          <dt><kbd>→</kbd> <kbd>PageDown</kbd> <kbd>空格</kbd></dt><dd>下一站</dd>
+          <dt><kbd>←</kbd> <kbd>PageUp</kbd> <kbd>Backspace</kbd></dt><dd>上一站</dd>
+          <dt><kbd>Home</kbd></dt><dd>回到全景</dd>
+          <dt><kbd>Q</kbd></dt><dd>课堂提问 / 揭晓答案</dd>
+          <dt><kbd>E</kbd></dt><dd>进入 / 退出 3D 场景</dd>
+          <dt><kbd>V</kbd></dt><dd>进入 / 退出 360° 全景</dd>
+          <dt><kbd>空格</kbd>（场景内）</dt><dd>暂停 / 继续战况</dd>
+          <dt><kbd>P</kbd></dt><dd>自动演示 开 / 关</dd>
+          <dt><kbd>L</kbd></dt><dd>图层面板</dd>
+          <dt><kbd>M</kbd></dt><dd>静音 / 恢复</dd>
+          <dt><kbd>F</kbd></dt><dd>全屏</dd>
+          <dt><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></dt><dd>切换隋唐 / 五代十国 / 宋朝</dd>
+          <dt><kbd>Esc</kbd></dt><dd>关闭弹窗 / 卡片</dd>
+        </dl>
+      </section>
+      <section>
+        <h4>网址参数（录屏用）</h4>
+        <dl>
+          <dt><code>?theme=wudai</code></dt><dd>指定时期（wudai / suitang / song）</dd>
+          <dt><code>?event=e05</code></dt><dd>从某个事件开始</dd>
+          <dt><code>?demo=1</code></dt><dd>自动逐站播放</dd>
+          <dt><code>?dwell=8000</code></dt><dd>每站停留毫秒数（默认 6800）</dd>
+          <dt><code>?nointro=1</code></dt><dd>跳过首屏</dd>
+        </dl>
+        <p class="help-note">翻页笔一般发送 PageUp / PageDown，已兼容。</p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- 首屏 -->
+<div id="intro">
+  <div class="intro-cover" id="introCover"></div>
+  <div class="intro-inner">
+    <div class="intro-seal"><span>史</span><span>境</span></div>
+    <h1 id="introTitle">史境 · 三维历史沙盘</h1>
+    <p class="intro-sub" id="introSub"></p>
+    <div class="intro-themes" id="introThemes"></div>
+    <button class="btn btn-main btn-lg" id="introStart">开始探索<svg viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6"/></svg></button>
+    <p class="intro-note" id="introNote"></p>
+  </div>
+</div>
+
+<div id="demoBadge" hidden><i></i>自动演示中 · 按 P 暂停</div>
+<div id="toast" hidden></div>
+<div id="fade"></div>
+
+<!-- 3D 场景（全知视角） -->
+<div id="sceneView" hidden>
+  <div id="vrStage" hidden>
+    <div id="vrSky"></div>
+    <div id="vrPan"></div>
+    <canvas id="vrDustCanvas"></canvas>
+    <div id="vrVignette"></div>
+    <div id="vrSpots"></div>
+    <div id="vrSpotTip" hidden></div>
+  </div>
+  <canvas id="sceneCanvas"></canvas>
+  <div id="sceneVignette"></div>
+  <header id="sceneTop">
+    <button class="scene-back" data-act="scene-exit" title="返回地图（Esc）">
+      <svg viewBox="0 0 24 24"><path d="m14.5 6-6 6 6 6"/></svg>返回地图<kbd>Esc</kbd>
+    </button>
+    <div class="scene-heading">
+      <span class="scene-kicker" id="sceneKicker">兵棋推演 · 战术示意</span>
+      <h2 id="sceneTitle"></h2>
+      <p id="sceneSub"></p>
+    </div>
+    <div class="scene-tools">
+      <div id="warSpeed" class="war-speed" hidden>
+        <button data-act="war-speed" data-speed="1" class="is-on">1x</button>
+        <button data-act="war-speed" data-speed="2">2x</button>
+        <button data-act="war-speed" data-speed="4">4x</button>
+      </div>
+      <button class="btn" data-act="war-restart" id="warRestart" hidden>重播<kbd>R</kbd></button>
+      <button class="btn" data-act="scene-vr" id="sceneVrBtn" title="360° 全景（V）" hidden>VR 全景</button>
+      <button class="btn scene-play" data-act="scene-play" id="scenePlayBtn"><span id="scenePlayLabel">暂停</span><kbd>Space</kbd></button>
+    </div>
+  </header>
+  <aside id="warSides" hidden></aside>
+  <aside id="scenePanel">
+    <div class="scene-meta"><span id="sceneTime"></span><span id="scenePlace"></span></div>
+    <section class="scene-section"><h4>主要人物</h4><p id="sceneFigures"></p></section>
+    <section class="scene-section court-only" id="courtSpeakerWrap" hidden><h4>发言</h4><p id="courtSpeaker"></p></section>
+    <section class="scene-section"><h4>结果</h4><p id="sceneResult"></p></section>
+    <section class="scene-section"><h4>影响</h4><p id="sceneImpact"></p></section>
+    <section class="scene-section"><h4>战场</h4><div id="sceneLegend"></div></section>
+    <p class="scene-note" id="sceneNote"></p>
+    <section class="scene-section war-only" id="warLogWrap" hidden><h4>战报</h4><div id="warLog"></div></section>
+    <section class="scene-section war-only" id="warLayersWrap" hidden><h4>图层</h4><div id="warLayersBody"></div></section>
+  </aside>
+  <div id="warTimeline" hidden><div class="war-track" id="warPhases"></div></div>
+  <div id="warUnitTip" hidden></div>
+  <footer id="sceneFoot">
+    <span class="scene-phase" id="scenePhase">接战</span>
+    <div class="scene-progress"><i id="sceneProgress"></i></div>
+    <span class="scene-hint">拖动旋转 · 滚轮缩放 · 空格暂停</span>
+  </footer>
+</div>
+
+<noscript><p class="noscript">本课件需要启用 JavaScript。</p></noscript>
+</div>
+</template>
+
+<script setup>
+/*
+ * App.vue — 应用外壳。
+ * 第一阶段：把原课件的 DOM 结构与文案原样保留（v-pre，Vue 不做编译与重渲染），
+ * 引擎在挂载后以 ESM 方式动态加载，接管 canvas 与这些节点的内容。
+ * 后续迭代时按区域把静态结构替换成 Vue 组件，id / data-act 契约保持不变。
+ */
+import { onMounted } from 'vue';
+
+onMounted(async () => {
+  await import('./engine/main.js');
+});
+</script>
